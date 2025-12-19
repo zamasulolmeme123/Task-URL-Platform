@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+        
       - name: Prepare env
         run: |
           cat > .env <<'EOF'
@@ -30,6 +30,7 @@ jobs:
 
       - name: Wait for Nginx -> API health
         run: |
+          set -euo pipefail
           for i in {1..30}; do
             if curl -fsS http://localhost:8080/health >/dev/null; then
               echo "OK"
@@ -43,45 +44,39 @@ jobs:
       - name: Create task via Nginx
         id: create
         run: |
+          set -euo pipefail
           RESP=$(curl -fsS -X POST http://localhost:8080/tasks \
             -H "Content-Type: application/json" \
             -d '{"text":"ci test"}')
           echo "$RESP"
-          TASK_ID=$(python - <<'PY'
-            import json,sys
-            print(json.loads(sys.stdin.read())["task_id"])
-            PY
-            <<< "$RESP")
-                    echo "task_id=$TASK_ID" >> $GITHUB_OUTPUT
+          TASK_ID=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['task_id'])")
+          echo "task_id=$TASK_ID" >> "$GITHUB_OUTPUT"
 
-                - name: Wait worker and check done
-                    run: |
-                    TASK_ID="${{ steps.create.outputs.task_id }}"
-                    for i in {1..20}; do
-                        RESP=$(curl -fsS "http://localhost:8080/tasks/$TASK_ID")
-                        echo "$RESP"
-                        STATUS=$(python - <<'PY'
-            import json,sys
-            print(json.loads(sys.stdin.read())["status"])
-            PY
-            <<< "$RESP")
-                        if [ "$STATUS" = "done" ]; then
-                        echo "Done!"
-                        exit 0
-                        fi
-                        sleep 2
-                    done
-                    echo "Task not done in time"
-                    exit 1
+      - name: Wait worker and check done
+        run: |
+          set -euo pipefail
+          TASK_ID="${{ steps.create.outputs.task_id }}"
+          for i in {1..20}; do
+            RESP=$(curl -fsS "http://localhost:8080/tasks/$TASK_ID")
+            echo "$RESP"
+            STATUS=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+            if [ "$STATUS" = "done" ]; then
+              echo "Done!"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Task not done in time"
+          exit 1
 
-                - name: Logs (db)
-                    if: always()
-                    run: docker compose logs --no-color db
+      - name: Logs (db)
+        if: always()
+        run: docker compose logs --no-color db
 
-                - name: Logs (all)
-                    if: always()
-                    run: docker compose logs --no-color
+      - name: Logs (all)
+        if: always()
+        run: docker compose logs --no-color
 
-                - name: Tear down
-                    if: always()
-                    run: docker compose down -v
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
