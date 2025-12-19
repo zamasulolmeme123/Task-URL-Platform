@@ -23,9 +23,9 @@ def init_db():
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS tasks (
                     task_id TEXT PRIMARY KEY,
-                    result TEXT,
-                    status TEXT NOT NULL,
-                    text   TEXT NOT NULL
+                    result  TEXT,
+                    status  TEXT NOT NULL,
+                    text    TEXT NOT NULL
                 );
             """)
             conn.commit()
