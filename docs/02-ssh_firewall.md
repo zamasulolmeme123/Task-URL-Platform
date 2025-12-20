@@ -54,3 +54,24 @@
 ```
 
 ## Firewall
+
+- Настраиваем ВМ на подключение только с нашего ip :
+
+```
+    sudo ufw allow from Наш_ip to any port 22 proto tcp
+```
+
+
+![alt text](image-3.png)
+
+## Nginx
+
+- Настраиваем подключение к nginx тоже только с нашего ip
+
+```
+    sudo ufw allow from Наш_ip to any port 8080 proto tcp
+```
+
+
+![alt text](image-4.png)
+
