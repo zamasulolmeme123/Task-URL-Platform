@@ -1,4 +1,4 @@
-name: CI - Build & Push to GHCR
+name: CI - Build & Push images to GHCR
 
 on:
   push:

@@ -1,0 +1,29 @@
+name: CD - Deploy on VPS
+
+on:
+  workflow_run:
+    workflows: ["CI - Build & Push images to GHCR"]
+    types: [completed]
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  TAG: sha-${{ github.sha }}
+  DEPLOY_DIR: /home/roman/projects/Task-URL-Platform
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: [self-hosted, vps]
+    steps:
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Pull & Up
+        run: |
+          cd "${DEPLOY_DIR}"
+          IMAGE_TAG="sha-${{ github.event.workflow_run.head_sha }}" docker compose -f docker-compose.prod.yml --env-file .env pull
+          IMAGE_TAG="sha-${{ github.event.workflow_run.head_sha }}" docker compose -f docker-compose.prod.yml --env-file .env up -d
+          curl -fsS http://localhost:8080/health
