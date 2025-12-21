@@ -1,8 +1,9 @@
 name: CD - Deploy to VPS (self-hosted)
 
 on:
-  push:
-    branches: ["main"]
+  workflow_run:
+    workflows: ["CI - Build & Push to GHCR"]
+    types: [completed]
 
 permissions:
   contents: read
@@ -11,31 +12,34 @@ permissions:
 env:
   OWNER: zamasulolmeme123
   IMAGE_REPO: task-url-platform
-  TAG: sha-${{ github.sha }}
   DEPLOY_DIR: /home/roman/projects/Task-URL-Platform
 
 jobs:
   deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: self-hosted
     steps:
-      - name: Show tag
-        run: echo "Deploying ${TAG}"
+      - name: Compute tag
+        run: |
+          echo "TAG=sha-${{ github.event.workflow_run.head_sha }}" >> $GITHUB_ENV
+          echo "Deploying sha-${{ github.event.workflow_run.head_sha }}"
 
       - name: Login to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull images
+      - name: Pull + Up + restart nginx
         run: |
           cd "${DEPLOY_DIR}"
           IMAGE_TAG="${TAG}" docker compose -f docker-compose.prod.yml --env-file .env pull
-
-      - name: Up + restart nginx
-        run: |
-          cd "${DEPLOY_DIR}"
           IMAGE_TAG="${TAG}" docker compose -f docker-compose.prod.yml --env-file .env up -d
           IMAGE_TAG="${TAG}" docker compose -f docker-compose.prod.yml --env-file .env restart nginx
+          IMAGE_TAG="${TAG}" docker compose -f docker-compose.prod.yml --env-file .env restart nginx
 
-      - name: Healthcheck wait
+      - name: Wait health
         run: |
           for i in $(seq 1 30); do
             code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health || true)
@@ -43,7 +47,7 @@ jobs:
               echo "health OK"
               exit 0
             fi
-            echo "waiting health... ($i/30), http=$code"
+            echo "waiting health... ($i/30) http=$code"
             sleep 2
           done
 

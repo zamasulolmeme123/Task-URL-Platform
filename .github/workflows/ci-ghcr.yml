@@ -1,4 +1,4 @@
-name: CI - Build & Push (multi-arch)
+name: CI - Build & Push to GHCR
 
 on:
   push:
@@ -37,6 +37,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/${{ env.OWNER }}/${{ env.IMAGE_REPO }}/api:${{ env.TAG }}
+            ghcr.io/${{ env.OWNER }}/${{ env.IMAGE_REPO }}/api:latest
 
       - name: Build & push Worker
         uses: docker/build-push-action@v6
@@ -46,3 +47,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/${{ env.OWNER }}/${{ env.IMAGE_REPO }}/worker:${{ env.TAG }}
+            ghcr.io/${{ env.OWNER }}/${{ env.IMAGE_REPO }}/worker:latest
