@@ -1,0 +1,33 @@
+name: CI - Build & Push to GHCR
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  OWNER: zamasulolmeme123
+  IMAGE_REPO: task-url-platform
+  TAG: sha-${{ github.sha }}
+
+jobs:
+  build_push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build & push API
+        run: |
+          docker build -t ghcr.io/${OWNER}/${IMAGE_REPO}/api:${TAG} ./api
+          docker push ghcr.io/${OWNER}/${IMAGE_REPO}/api:${TAG}
+
+      - name: Build & push Worker
+        run: |
+          docker build -t ghcr.io/${OWNER}/${IMAGE_REPO}/worker:${TAG} ./worker
+          docker push ghcr.io/${OWNER}/${IMAGE_REPO}/worker:${TAG}
