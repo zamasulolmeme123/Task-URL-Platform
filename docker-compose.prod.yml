@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5433:5432"   # опционально, можно убрать если не нужен доступ снаружи
+      - "5433:5432" 
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -19,6 +19,8 @@ services:
   api:
     image: ghcr.io/zamasulolmeme123/task-url-platform/api:${IMAGE_TAG}
     env_file: [.env]
+    environment:
+      APP_VERSION: ${IMAGE_TAG}
     depends_on:
       db:
         condition: service_healthy
