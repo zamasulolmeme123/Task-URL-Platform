@@ -1,4 +1,4 @@
-# Task URL Platform (FastAPI + Postgres + Worker) — pet-project для DevOps.
+# Task URL Platform (FastAPI + Postgres + Worker) — pet-project для DevOps!
 
 Небольшая платформа задач: API принимает задачу (`text`), сохраняет в PostgreSQL со статусом `queued`, воркер забирает задачи из БД, обрабатывает и обновляет статус до `done` + записывает результат.  
 Проект упакован в Docker Compose и имеет CI на GitHub Actions (smoke-тест полного стека).

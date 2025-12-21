@@ -48,4 +48,16 @@ jobs:
           cd "${DEPLOY_DIR}"
           IMAGE_TAG="${TAG}" docker compose -f docker-compose.prod.yml --env-file .env pull
           IMAGE_TAG="${TAG}" docker compose -f docker-compose.prod.yml --env-file .env up -d
-          curl -fsS http://localhost:8080/health
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/health >/dev/null; then
+                echo "health OK"
+                exit 0
+            fi
+            echo "waiting health... ($i/30)"
+            sleep 2
+            done
+            echo "health FAILED"
+            docker compose -f docker-compose.prod.yml --env-file .env ps
+            docker compose -f docker-compose.prod.yml --env-file .env logs --tail=200 nginx api worker
+            exit 1
+
